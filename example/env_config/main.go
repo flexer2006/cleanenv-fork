@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/ilyakaznacheev/cleanenv"
+	"github.com/flexer2006/cleanenv-fork"
 )
 
 type config struct {

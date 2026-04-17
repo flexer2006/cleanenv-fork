@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/ilyakaznacheev/cleanenv"
+	"github.com/flexer2006/cleanenv-fork"
 )
 
 // Config is a application configuration structure
@@ -67,7 +67,7 @@ func main() {
 }
 
 // ProcessArgs processes and handles CLI arguments
-func ProcessArgs(cfg interface{}) Args {
+func ProcessArgs(cfg any) Args {
 	var a Args
 
 	f := flag.NewFlagSet("Example server", 1)

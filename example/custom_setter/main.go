@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/ilyakaznacheev/cleanenv"
+	"github.com/flexer2006/cleanenv-fork"
 )
 
 type config struct {
@@ -40,7 +40,7 @@ func (r *roles) SetValue(s string) error {
 	}
 
 	roles := strings.Split(s, " ")
-	for i := 0; i < len(roles); i++ {
+	for i := range roles {
 		*r = append(*r, roles[i])
 	}
 

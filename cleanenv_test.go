@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"reflect"
@@ -30,7 +29,6 @@ func TestReadEnvVars(t *testing.T) {
 		}
 		return d
 	}
-
 	timeFunc := func(s, l string) time.Time {
 		tm, err := time.Parse(l, s)
 		if err != nil {
@@ -38,34 +36,29 @@ func TestReadEnvVars(t *testing.T) {
 		}
 		return tm
 	}
-
 	ta := &testUpdater{
 		err: errors.New("test"),
 	}
-
 	type Combined struct {
 		Empty   int
 		Default int `env:"TEST0" env-default:"1"`
 		Global  int `env:"TEST1" env-default:"1"`
 		local   int `env:"TEST2" env-default:"1"`
 	}
-
 	type AllTypes struct {
-		Integer    int64         `env:"TEST_INTEGER"`
-		UnsInteger uint64        `env:"TEST_UNSINTEGER"`
-		Float      float64       `env:"TEST_FLOAT"`
-		Boolean    bool          `env:"TEST_BOOLEAN"`
-		String     string        `env:"TEST_STRING"`
-		Duration   time.Duration `env:"TEST_DURATION"`
-		Time       time.Time     `env:"TEST_TIME"`
-		// Location depends on the system, so we test it with time.UTC
-		Location        *time.Location    `env:"TEST_LOCATION"`
 		ArrayInt        []int             `env:"TEST_ARRAYINT"`
 		ArrayString     []string          `env:"TEST_ARRAYSTRING"`
+		Time            time.Time         `env:"TEST_TIME"`
+		String          string            `env:"TEST_STRING"`
+		Integer         int64             `env:"TEST_INTEGER"`
+		UnsInteger      uint64            `env:"TEST_UNSINTEGER"`
+		Float           float64           `env:"TEST_FLOAT"`
+		Boolean         bool              `env:"TEST_BOOLEAN"`
+		Duration        time.Duration     `env:"TEST_DURATION"`
+		Location        *time.Location    `env:"TEST_LOCATION"`
 		MapStringInt    map[string]int    `env:"TEST_MAPSTRINGINT"`
 		MapStringString map[string]string `env:"TEST_MAPSTRINGSTRING"`
 	}
-
 	type TimeTypes struct {
 		Time1 time.Time            `env:"TEST_TIME1"`
 		Time2 time.Time            `env:"TEST_TIME2" env-layout:"Mon Jan _2 15:04:05 2006"`
@@ -75,18 +68,15 @@ func TestReadEnvVars(t *testing.T) {
 		Time6 []time.Time          `env:"TEST_TIME6" env-separator:"|"`
 		Time7 map[string]time.Time `env:"TEST_TIME7" env-separator:"|"`
 	}
-
 	type Required struct {
 		NotRequired int `env:"NOT_REQUIRED"`
 		Required    int `env:"REQUIRED" env-required:"true"`
 	}
-
 	tests := []struct {
-		name    string
-		env     map[string]string
-		cfg     interface{}
-		want    interface{}
-		wantErr bool
+		name      string
+		cfg, want any
+		env       map[string]string
+		wantErr   bool
 	}{
 		{
 			name: "combined",
@@ -103,18 +93,16 @@ func TestReadEnvVars(t *testing.T) {
 			},
 			wantErr: false,
 		},
-
 		{
 			name: "all types",
 			env: map[string]string{
-				"TEST_INTEGER":    "-5",
-				"TEST_UNSINTEGER": "5",
-				"TEST_FLOAT":      "5.5",
-				"TEST_BOOLEAN":    "true",
-				"TEST_STRING":     "test",
-				"TEST_DURATION":   "1h5m10s",
-				"TEST_TIME":       "2012-04-23T18:25:43.511Z",
-				// Location depends on the system, so we test it with time.UTC
+				"TEST_INTEGER":         "-5",
+				"TEST_UNSINTEGER":      "5",
+				"TEST_FLOAT":           "5.5",
+				"TEST_BOOLEAN":         "true",
+				"TEST_STRING":          "test",
+				"TEST_DURATION":        "1h5m10s",
+				"TEST_TIME":            "2012-04-23T18:25:43.511Z",
 				"TEST_LOCATION":        "UTC",
 				"TEST_ARRAYINT":        "1,2,3",
 				"TEST_ARRAYSTRING":     "a,b,c",
@@ -146,7 +134,6 @@ func TestReadEnvVars(t *testing.T) {
 			},
 			wantErr: false,
 		},
-
 		{
 			name: "times",
 			env: map[string]string{
@@ -174,7 +161,6 @@ func TestReadEnvVars(t *testing.T) {
 			},
 			wantErr: false,
 		},
-
 		{
 			name: "wrong types",
 			env: map[string]string{
@@ -193,7 +179,6 @@ func TestReadEnvVars(t *testing.T) {
 			want:    &AllTypes{},
 			wantErr: true,
 		},
-
 		{
 			name: "wrong int",
 			env: map[string]string{
@@ -203,7 +188,6 @@ func TestReadEnvVars(t *testing.T) {
 			want:    &AllTypes{},
 			wantErr: true,
 		},
-
 		{
 			name: "wrong uint",
 			env: map[string]string{
@@ -213,7 +197,6 @@ func TestReadEnvVars(t *testing.T) {
 			want:    &AllTypes{},
 			wantErr: true,
 		},
-
 		{
 			name: "wrong float",
 			env: map[string]string{
@@ -223,7 +206,6 @@ func TestReadEnvVars(t *testing.T) {
 			want:    &AllTypes{},
 			wantErr: true,
 		},
-
 		{
 			name: "wrong boolean",
 			env: map[string]string{
@@ -233,7 +215,6 @@ func TestReadEnvVars(t *testing.T) {
 			want:    &AllTypes{},
 			wantErr: true,
 		},
-
 		{
 			name: "wrong duration",
 			env: map[string]string{
@@ -243,7 +224,6 @@ func TestReadEnvVars(t *testing.T) {
 			want:    &AllTypes{},
 			wantErr: true,
 		},
-
 		{
 			name: "wrong array int",
 			env: map[string]string{
@@ -253,7 +233,6 @@ func TestReadEnvVars(t *testing.T) {
 			want:    &AllTypes{},
 			wantErr: true,
 		},
-
 		{
 			name: "wrong map int",
 			env: map[string]string{
@@ -263,7 +242,6 @@ func TestReadEnvVars(t *testing.T) {
 			want:    &AllTypes{},
 			wantErr: true,
 		},
-
 		{
 			name: "wrong map type int",
 			env: map[string]string{
@@ -273,7 +251,6 @@ func TestReadEnvVars(t *testing.T) {
 			want:    &AllTypes{},
 			wantErr: true,
 		},
-
 		{
 			name: "wrong map type string",
 			env: map[string]string{
@@ -283,21 +260,18 @@ func TestReadEnvVars(t *testing.T) {
 			want:    &AllTypes{},
 			wantErr: true,
 		},
-
 		{
 			name:    "wrong config type",
 			cfg:     42,
 			want:    42,
 			wantErr: true,
 		},
-
 		{
 			name:    "updater error",
 			cfg:     ta,
 			want:    ta,
 			wantErr: true,
 		},
-
 		{
 			name:    "required error",
 			cfg:     &Required{},
@@ -305,7 +279,6 @@ func TestReadEnvVars(t *testing.T) {
 			wantErr: true,
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			for env, val := range tt.env {
@@ -327,7 +300,6 @@ func TestReadEnvErrors(t *testing.T) {
 	type testOneLevel struct {
 		Host string `env:"HOST" env-required:"true"`
 	}
-
 	type testTwoLevels struct {
 		Queue struct {
 			Host string `env:"HOST"`
@@ -340,7 +312,6 @@ func TestReadEnvErrors(t *testing.T) {
 			Host string `env:"HOST"`
 		} `env-prefix:"TEST_ERRORS_THIRD_"`
 	}
-
 	type testThreeLevels struct {
 		Database struct {
 			URL struct {
@@ -348,11 +319,10 @@ func TestReadEnvErrors(t *testing.T) {
 			}
 		}
 	}
-
 	tests := []struct {
 		name          string
 		env           map[string]string
-		cfg           interface{}
+		cfg           any
 		expectedError string
 	}{
 		{
@@ -383,7 +353,6 @@ func TestReadEnvErrors(t *testing.T) {
 			expectedError: `parsing field "Database.TTL" env "TEST_ERRORS_DATABASE_TTL": time: invalid duration "bad-value"`,
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			for env, val := range tt.env {
@@ -412,16 +381,14 @@ func TestReadEnvVarsURL(t *testing.T) {
 		}
 		return *parsed
 	}
-
 	type WithURL struct {
 		DatabaseURL url.URL `env:"DB_URL"`
 	}
-
 	tests := []struct {
 		name    string
 		env     map[string]string
-		cfg     interface{}
-		want    interface{}
+		cfg     any
+		want    any
 		wantErr bool
 	}{
 		{
@@ -447,7 +414,6 @@ func TestReadEnvVarsURL(t *testing.T) {
 			wantErr: false,
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			for env, val := range tt.env {
@@ -474,16 +440,14 @@ func TestReadEnvVarsTime(t *testing.T) {
 		}
 		return tm
 	}
-
 	type Timed struct {
 		Time time.Time `env:"TEST_TIME" env-layout:"Mon Jan _2 15:04:05 2006"`
 	}
-
 	tests := []struct {
 		name    string
 		env     map[string]string
-		cfg     interface{}
-		want    interface{}
+		cfg     any
+		want    any
 		wantErr bool
 	}{
 		{
@@ -498,7 +462,6 @@ func TestReadEnvVarsTime(t *testing.T) {
 			wantErr: false,
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			for env, val := range tt.env {
@@ -519,19 +482,16 @@ func TestReadEnvVarsWithPrefix(t *testing.T) {
 	type Logging struct {
 		Debug bool `env:"DEBUG"`
 	}
-
 	type DBConfig struct {
 		Host    string  `env:"DB_HOST"`
 		Port    int     `env:"DB_PORT"`
 		Logging Logging `env-prefix:"DB_"`
 	}
-
 	type Config struct {
 		Default  DBConfig
 		ReadOnly DBConfig `env-prefix:"READONLY_"`
 		Extra    DBConfig `env-prefix:"EXTRA_"`
 	}
-
 	var env = map[string]string{
 		"DB_HOST":           "db1.host",
 		"DB_PORT":           "10000",
@@ -546,12 +506,10 @@ func TestReadEnvVarsWithPrefix(t *testing.T) {
 	for k, v := range env {
 		os.Setenv(k, v)
 	}
-
 	var cfg Config
 	if err := readEnvVars(&cfg, false); err != nil {
 		t.Fatal("failed to read env vars", err)
 	}
-
 	var expected = Config{
 		Default: DBConfig{
 			Host:    "db1.host",
@@ -569,7 +527,6 @@ func TestReadEnvVarsWithPrefix(t *testing.T) {
 			Logging: Logging{Debug: true},
 		},
 	}
-
 	if !reflect.DeepEqual(cfg, expected) {
 		t.Errorf("wrong data %v, want %v", cfg, expected)
 	}
@@ -595,11 +552,10 @@ type testConfigUpdateNoFunction struct {
 }
 
 func TestReadUpdateFunctions(t *testing.T) {
-
 	tests := []struct {
 		name    string
-		cfg     interface{}
-		want    interface{}
+		cfg     any
+		want    any
 		wantErr bool
 	}{
 		{
@@ -616,7 +572,6 @@ func TestReadUpdateFunctions(t *testing.T) {
 			},
 			wantErr: false,
 		},
-
 		{
 			name: "no update",
 			cfg: &testConfigUpdateNoFunction{
@@ -632,7 +587,6 @@ func TestReadUpdateFunctions(t *testing.T) {
 			wantErr: false,
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := readEnvVars(tt.cfg, false); (err != nil) != tt.wantErr {
@@ -658,7 +612,6 @@ func TestParseFile(t *testing.T) {
 		Object  configObject `yaml:"object" json:"object" toml:"object"`
 		Array   []int        `yaml:"array" json:"array" toml:"array"`
 	}
-
 	wantConfig := config{
 		Number:  1,
 		Float:   2.3,
@@ -667,7 +620,6 @@ func TestParseFile(t *testing.T) {
 		Object:  configObject{1, 2},
 		Array:   []int{1, 2, 3},
 	}
-
 	tests := []struct {
 		name    string
 		file    string
@@ -690,7 +642,6 @@ array: [1, 2, 3]`,
 			want:    &wantConfig,
 			wantErr: false,
 		},
-
 		{
 			name: "json",
 			file: `{
@@ -708,7 +659,6 @@ array: [1, 2, 3]`,
 			want:    &wantConfig,
 			wantErr: false,
 		},
-
 		{
 			name: "toml",
 			file: `
@@ -724,7 +674,6 @@ two = 2`,
 			want:    &wantConfig,
 			wantErr: false,
 		},
-
 		{
 			name:    "unknown",
 			file:    "-",
@@ -732,7 +681,6 @@ two = 2`,
 			want:    nil,
 			wantErr: true,
 		},
-
 		{
 			name:    "parsing error",
 			file:    "-",
@@ -741,10 +689,9 @@ two = 2`,
 			wantErr: true,
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tmpFile, err := ioutil.TempFile(os.TempDir(), fmt.Sprintf("*.%s", tt.ext))
+			tmpFile, err := os.CreateTemp(os.TempDir(), fmt.Sprintf("*.%s", tt.ext))
 			if err != nil {
 				t.Fatal("cannot create temporary file:", err)
 			}
@@ -764,7 +711,6 @@ two = 2`,
 			}
 		})
 	}
-
 	t.Run("invalid path", func(t *testing.T) {
 		err := parseFile("invalid file path", nil)
 		if err == nil {
@@ -775,7 +721,6 @@ two = 2`,
 
 func TestParseFileEnv(t *testing.T) {
 	type dummy struct{}
-
 	tests := []struct {
 		name    string
 		rawFile string
@@ -797,29 +742,25 @@ func TestParseFileEnv(t *testing.T) {
 			},
 			wantErr: false,
 		},
-
 		{
 			name:    "empty file",
 			has:     map[string]string{},
 			want:    map[string]string{},
 			wantErr: false,
 		},
-
 		{
 			name:    "error",
 			rawFile: "-",
 			wantErr: true,
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tmpFile, err := ioutil.TempFile(os.TempDir(), "*.env")
+			tmpFile, err := os.CreateTemp(os.TempDir(), "*.env")
 			if err != nil {
 				t.Fatal("cannot create temporary file:", err)
 			}
 			defer os.Remove(tmpFile.Name())
-
 			var file string
 			if tt.rawFile == "" {
 				for key, val := range tt.has {
@@ -828,12 +769,10 @@ func TestParseFileEnv(t *testing.T) {
 			} else {
 				file = tt.rawFile
 			}
-
 			text := []byte(file)
 			if _, err = tmpFile.Write(text); err != nil {
 				t.Fatal("failed to write to temporary file:", err)
 			}
-
 			var cfg dummy
 			if err = parseFile(tmpFile.Name(), &cfg); (err != nil) != tt.wantErr {
 				t.Errorf("wrong error behavior %v, wantErr %v", err, tt.wantErr)
@@ -843,7 +782,6 @@ func TestParseFileEnv(t *testing.T) {
 					t.Errorf("wrong value %s of var %s, want %s", envVal, key, val)
 				}
 			}
-
 			os.Clearenv()
 		})
 	}
@@ -855,42 +793,34 @@ func TestGetDescription(t *testing.T) {
 		Two   int `env:"TWO" env-description:"two"`
 		Three int `env:"THREE" env-description:"three"`
 	}
-
 	type testSeveralEnv struct {
 		One int `env:"ONE,ENO" env-description:"one"`
 		Two int `env:"TWO,OWT" env-description:"two"`
 	}
-
 	type testDefaultEnv struct {
 		One   int `env:"ONE" env-description:"one" env-default:"1"`
 		Two   int `env:"TWO" env-description:"two" env-default:"2"`
 		Three int `env:"THREE" env-description:"three" env-default:"3"`
 	}
-
 	type testSubOne struct {
 		One int `env:"ONE" env-description:"one"`
 	}
-
 	type testSubTwo struct {
 		Two int `env:"TWO" env-description:"two"`
 	}
-
 	type testDeep struct {
 		OneStruct testSubOne
 		TwoStruct testSubTwo
 	}
-
 	type testNoEnv struct {
 		One   int
 		Two   int
 		Three int
 	}
-
 	header := "test header:"
-
 	tests := []struct {
 		name    string
-		cfg     interface{}
+		cfg     any
 		header  *string
 		want    string
 		wantErr bool
@@ -905,7 +835,6 @@ func TestGetDescription(t *testing.T) {
 				"\n  TWO int\n    \ttwo",
 			wantErr: false,
 		},
-
 		{
 			name:   "several env",
 			cfg:    &testSeveralEnv{},
@@ -917,7 +846,6 @@ func TestGetDescription(t *testing.T) {
 				"\n  TWO int\n    \ttwo",
 			wantErr: false,
 		},
-
 		{
 			name:   "default env",
 			cfg:    &testDefaultEnv{},
@@ -928,7 +856,6 @@ func TestGetDescription(t *testing.T) {
 				"\n  TWO int\n    \ttwo (default \"2\")",
 			wantErr: false,
 		},
-
 		{
 			name:   "deep structure",
 			cfg:    &testDeep{},
@@ -938,7 +865,6 @@ func TestGetDescription(t *testing.T) {
 				"\n  TWO int\n    \ttwo",
 			wantErr: false,
 		},
-
 		{
 			name:    "no env",
 			cfg:     &testNoEnv{},
@@ -946,7 +872,6 @@ func TestGetDescription(t *testing.T) {
 			want:    "",
 			wantErr: false,
 		},
-
 		{
 			name:   "custom header",
 			cfg:    &testSingleEnv{},
@@ -957,7 +882,6 @@ func TestGetDescription(t *testing.T) {
 				"\n  TWO int\n    \ttwo",
 			wantErr: false,
 		},
-
 		{
 			name:    "error",
 			cfg:     123,
@@ -966,7 +890,6 @@ func TestGetDescription(t *testing.T) {
 			wantErr: true,
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := GetDescription(tt.cfg, tt.header)
@@ -987,9 +910,7 @@ func TestFUsage(t *testing.T) {
 		Two   int `env:"TWO" env-description:"two"`
 		Three int `env:"THREE" env-description:"three"`
 	}
-
 	customHeader := "test header:"
-
 	tests := []struct {
 		name       string
 		headerText *string
@@ -1006,7 +927,6 @@ func TestFUsage(t *testing.T) {
 				"\n  TWO int\n    \ttwo" +
 				"\n",
 		},
-
 		{
 			name:       "custom header",
 			headerText: &customHeader,
@@ -1017,7 +937,6 @@ func TestFUsage(t *testing.T) {
 				"\n  TWO int\n    \ttwo" +
 				"\n",
 		},
-
 		{
 			name:       "custom usages",
 			headerText: nil,
@@ -1033,7 +952,6 @@ func TestFUsage(t *testing.T) {
 				"\n  TWO int\n    \ttwo" +
 				"\n",
 		},
-
 		{
 			name:       "custom usages and header",
 			headerText: &customHeader,
@@ -1063,9 +981,8 @@ func TestFUsage(t *testing.T) {
 			}
 			var cfg testSingleEnv
 			FUsage(w, &cfg, tt.headerText, uFuncs...)()
-			gotRaw, _ := ioutil.ReadAll(w)
+			gotRaw, _ := io.ReadAll(w)
 			got := string(gotRaw)
-
 			if got != tt.want {
 				t.Errorf("wrong output %v, want %v", got, tt.want)
 			}
@@ -1088,9 +1005,7 @@ func TestFUsageNested(t *testing.T) {
 			Host string `env:"HOST" env-description:"database host"`
 		} `env-prefix:"DATABASE_"`
 	}
-
 	customHeader := "test header:"
-
 	tests := []struct {
 		name       string
 		headerText *string
@@ -1108,7 +1023,6 @@ func TestFUsageNested(t *testing.T) {
 				"\n  DATABASE_HOST string\n    \tdatabase host" +
 				"\n",
 		},
-
 		{
 			name:       "custom header",
 			headerText: &customHeader,
@@ -1120,7 +1034,6 @@ func TestFUsageNested(t *testing.T) {
 				"\n  DATABASE_HOST string\n    \tdatabase host" +
 				"\n",
 		},
-
 		{
 			name:       "custom usages",
 			headerText: nil,
@@ -1137,7 +1050,6 @@ func TestFUsageNested(t *testing.T) {
 				"\n  DATABASE_HOST string\n    \tdatabase host" +
 				"\n",
 		},
-
 		{
 			name:       "custom usages and header",
 			headerText: &customHeader,
@@ -1168,7 +1080,7 @@ func TestFUsageNested(t *testing.T) {
 			}
 			var cfg testNestedEnv
 			FUsage(w, &cfg, tt.headerText, uFuncs...)()
-			gotRaw, _ := ioutil.ReadAll(w)
+			gotRaw, _ := io.ReadAll(w)
 			got := string(gotRaw)
 
 			if got != tt.want {
@@ -1185,7 +1097,6 @@ func TestReadConfig(t *testing.T) {
 		NoDefault string `edn:"no-default" yaml:"no-default" env:"TEST_NO_DEFAULT"`
 		NoEnv     string `edn:"no-env" yaml:"no-env" env-default:"default"`
 	}
-
 	tests := []struct {
 		name    string
 		file    string
@@ -1214,7 +1125,6 @@ func TestReadConfig(t *testing.T) {
 			},
 			wantErr: false,
 		},
-
 		{
 			name: "edn_and_env",
 			file: `
@@ -1257,7 +1167,6 @@ no-env: this
 			},
 			wantErr: false,
 		},
-
 		{
 			name: "env_only",
 			file: "none: none",
@@ -1274,7 +1183,6 @@ no-env: this
 			},
 			wantErr: false,
 		},
-
 		{
 			name: "yaml_and_env",
 			file: `
@@ -1296,7 +1204,6 @@ no-env: this
 			},
 			wantErr: false,
 		},
-
 		{
 			name: "empty",
 			file: "none: none",
@@ -1310,7 +1217,6 @@ no-env: this
 			},
 			wantErr: false,
 		},
-
 		{
 			name:    "unknown",
 			file:    "-",
@@ -1318,7 +1224,6 @@ no-env: this
 			want:    nil,
 			wantErr: true,
 		},
-
 		{
 			name:    "parsing error",
 			file:    "-",
@@ -1330,22 +1235,19 @@ no-env: this
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tmpFile, err := ioutil.TempFile(os.TempDir(), fmt.Sprintf("*.%s", tt.ext))
+			tmpFile, err := os.CreateTemp(os.TempDir(), fmt.Sprintf("*.%s", tt.ext))
 			if err != nil {
 				t.Fatal("cannot create temporary file:", err)
 			}
 			defer os.Remove(tmpFile.Name())
-
 			text := []byte(tt.file)
 			if _, err = tmpFile.Write(text); err != nil {
 				t.Fatal("failed to write to temporary file:", err)
 			}
-
 			for env, val := range tt.env {
 				os.Setenv(env, val)
 			}
 			defer os.Clearenv()
-
 			var cfg config
 			if err = ReadConfig(tmpFile.Name(), &cfg); (err != nil) != tt.wantErr {
 				t.Errorf("wrong error behavior %v, wantErr %v", err, tt.wantErr)
@@ -1357,23 +1259,16 @@ no-env: this
 	}
 }
 
-// TestTimeLocation tests *time.Location parse. It is  a pointer type,
-// so we need to compare it with pointer manually,
-// because reflect.DeepEqual() compares only pointer values, not their structs
 func TestTimeLocation(t *testing.T) {
 	want := time.UTC
-
 	var S struct {
 		Location *time.Location `env:"TEST_LOCATION"`
 	}
-
 	os.Setenv("TEST_LOCATION", "UTC")
 	defer os.Clearenv()
-
 	if err := ReadEnv(&S); err != nil {
 		t.Fatal("cannot read env:", err)
 	}
-
 	if want != S.Location {
 		t.Errorf("wrong location pointers: got %p, want %p", S.Location, want)
 	}
@@ -1391,18 +1286,14 @@ func TestStructSetter(t *testing.T) {
 	want := StructSetter{
 		Value: "bar",
 	}
-
 	var cfg struct {
 		Foo StructSetter `env:"FOO"`
 	}
-
 	os.Setenv("FOO", "bar")
 	defer os.Clearenv()
-
 	if err := ReadEnv(&cfg); err != nil {
 		t.Fatal("cannot read env:", err)
 	}
-
 	if !reflect.DeepEqual(cfg.Foo, want) {
 		t.Errorf("wrong data: got %v, want %v", cfg.Foo, want)
 	}
@@ -1419,7 +1310,6 @@ func TestSkipUnexportedField(t *testing.T) {
 			Port string `yaml:"port" env:"SRV_PORT,PORT" env-description:"Server port" env-default:"8080"`
 		} `yaml:"server"`
 	}{}
-
 	if err := ReadConfig("example/simple_config/config.yml", &conf); err != nil {
 		t.Fatal(err)
 	}
@@ -1444,7 +1334,6 @@ func TestParseYAML(t *testing.T) {
 		Object  configObject `yaml:"object"`
 		Array   []int        `yaml:"array"`
 	}
-
 	wantConfig := config{
 		Number:  1,
 		Float:   2.3,
@@ -1453,7 +1342,6 @@ func TestParseYAML(t *testing.T) {
 		Object:  configObject{1, 2},
 		Array:   []int{1, 2, 3},
 	}
-
 	tests := []struct {
 		name    string
 		r       io.Reader
@@ -1502,7 +1390,6 @@ func TestParseJSON(t *testing.T) {
 		Object  configObject `json:"object"`
 		Array   []int        `json:"array"`
 	}
-
 	wantConfig := config{
 		Number:  1,
 		Float:   2.3,
@@ -1511,7 +1398,6 @@ func TestParseJSON(t *testing.T) {
 		Object:  configObject{1, 2},
 		Array:   []int{1, 2, 3},
 	}
-
 	tests := []struct {
 		name    string
 		r       io.Reader
@@ -1539,8 +1425,8 @@ func TestParseJSON(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var cfg config
-			var err error
-			if err := ParseJSON(tt.r, &cfg); (err != nil) != tt.wantErr {
+			err := ParseJSON(tt.r, &cfg)
+			if (err != nil) != tt.wantErr {
 				t.Errorf("ParseJSON() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if err == nil && !reflect.DeepEqual(&cfg, tt.want) {
@@ -1563,7 +1449,6 @@ func TestParseTOML(t *testing.T) {
 		Object  configObject `toml:"object"`
 		Array   []int        `toml:"array"`
 	}
-
 	wantConfig := config{
 		Number:  1,
 		Float:   2.3,
@@ -1572,7 +1457,6 @@ func TestParseTOML(t *testing.T) {
 		Object:  configObject{1, 2},
 		Array:   []int{1, 2, 3},
 	}
-
 	tests := []struct {
 		name    string
 		r       io.Reader
@@ -1597,11 +1481,11 @@ two = 2`),
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var cfg config
-			var err error
-			if err := ParseTOML(tt.r, &cfg); (err != nil) != tt.wantErr {
+			err := ParseTOML(tt.r, &cfg)
+			if (err != nil) != tt.wantErr {
 				t.Errorf("ParseTOML() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if err == nil && !reflect.DeepEqual(&cfg, tt.want) {
+			if !tt.wantErr && !reflect.DeepEqual(&cfg, tt.want) {
 				t.Errorf("wrong data %v, want %v", &cfg, tt.want)
 			}
 		})
